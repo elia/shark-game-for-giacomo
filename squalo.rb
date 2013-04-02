@@ -1,12 +1,5 @@
 require 'gosu'
 
-END {
-  window = GameWindow.new
-  window.show
-
-
-}
-
 module ZOrder
   Background, Fish, Shark, UI = *0..3
 end
@@ -35,7 +28,14 @@ class GameWindow < Gosu::Window
     @player.go_up    if up?
     @player.go_down  if down?
 
-    self.fishes += [Fish.new(self), Fish.new(self)] unless fishes.any?
+    unless fishes.any?
+      self.fishes += [
+        Fish.new(self),
+        Fish.new(self),
+        Fish.new(self),
+        Fish.new(self),
+      ]
+    end
     fishes.each(&:move)
 
     @player.move
@@ -117,7 +117,12 @@ class Shark
   end
 
   def image= file
-    @image = Gosu::Image.new(@window, file, false)
+    @image = self.class.image file, @window
+  end
+
+  def self.image file, window
+    @images ||= Hash.new
+    @images[file] = Gosu::Image.new(window, file, false)
   end
 
   def warp(x, y)
@@ -173,12 +178,12 @@ class Shark
   end
 
   def go_up
-    @vel_y = -5
+    @vel_y = -3
     splash!
   end
 
   def go_down
-    @vel_y = 5
+    @vel_y = 3
     splash!
   end
 end
@@ -187,17 +192,18 @@ end
 class Fish < Shark
   def setup
     super
-    @vel_x = rand(10) - 5
-    @vel_y = rand(2.0) - 1
+    @vel_x = 5 * (rand - 0.5)
+    @vel_y = 1 * (rand - 0.5)
     @y = 40 + rand(Height)/2
   end
 
   def name
-    'fish'
+    @n ||= rand(4)+1
+    "fish/fish-#{@n}"
   end
 
   def ext
-    'gif'
+    'png'
   end
 
   def decelerate
@@ -208,3 +214,6 @@ class Fish < Shark
     # noop
   end
 end
+
+window = GameWindow.new
+window.show
