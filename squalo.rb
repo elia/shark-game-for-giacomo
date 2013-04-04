@@ -1,5 +1,5 @@
 require 'gosu'
-require 'profile'
+# require 'profile'
 
 module ZOrder
   Background, Fish, Shark, UI = *0..3
