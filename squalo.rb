@@ -1,4 +1,5 @@
 require 'gosu'
+require 'profile'
 
 module ZOrder
   Background, Fish, Shark, UI = *0..3
@@ -30,6 +31,10 @@ class GameWindow < Gosu::Window
 
     unless fishes.any?
       self.fishes += [
+        Fish.new(self),
+        Fish.new(self),
+        Fish.new(self),
+        Fish.new(self),
         Fish.new(self),
         Fish.new(self),
         Fish.new(self),
@@ -122,7 +127,7 @@ class Shark
 
   def self.image file, window
     @images ||= Hash.new
-    @images[file] = Gosu::Image.new(window, file, false)
+    @images[file] ||= Gosu::Image.new(window, file, false)
   end
 
   def warp(x, y)
