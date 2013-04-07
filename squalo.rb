@@ -1,21 +1,35 @@
-require 'gosu'
+$:.unshift "#{__dir__}/lib"
+
+require 'fish'
+require 'gosu_dsl'
 # require 'profile'
 
+$media_dir = "#{__dir__}/squalo"
+
 module ZOrder
-  Background, Fish, Shark, UI = *0..3
+  Background, LittleFish, Shark, UI = *0..3
 end
 
 Width = 800
 Height = 480
+
+
 class GameWindow < Gosu::Window
+  include GosuDsl::Media
+  include GosuDsl::Keyboard
+
   def initialize
     super Width, Height, false
     self.caption = '🐟'
-    @background_image = Gosu::Image.new(self, "underwater.jpg", true)
+    @background_image = image('underwater.jpg', true)
     @font = Gosu::Font.new(self, Gosu::default_font_name, 20)
     @player = Shark.new(self)
     @player.warp(320, 240)
     @player.go_right
+  end
+
+  def window
+    self
   end
 
   def fishes
@@ -31,33 +45,20 @@ class GameWindow < Gosu::Window
 
     unless fishes.any?
       self.fishes += [
-        Fish.new(self),
-        Fish.new(self),
-        Fish.new(self),
-        Fish.new(self),
-        Fish.new(self),
-        Fish.new(self),
-        Fish.new(self),
-        Fish.new(self),
+        LittleFish.new(self),
+        LittleFish.new(self),
+        LittleFish.new(self),
+        LittleFish.new(self),
+        LittleFish.new(self),
+        LittleFish.new(self),
+        LittleFish.new(self),
+        LittleFish.new(self),
       ]
     end
     fishes.each(&:move)
 
     @player.move
     @player.eats_fish(fishes)
-  end
-
-  def left?
-    button_down? Gosu::KbLeft or button_down? Gosu::GpLeft
-  end
-  def right?
-    button_down? Gosu::KbRight or button_down? Gosu::GpRight
-  end
-  def up?
-    button_down? Gosu::KbUp or button_down? Gosu::GpButton0
-  end
-  def down?
-    button_down? Gosu::KbDown
   end
 
   def draw
@@ -74,20 +75,35 @@ class GameWindow < Gosu::Window
   end
 end
 
-class Shark
-  def initialize(window)
-    @window = window
-    setup
+class Shark < Fish
+  prepend Collector
+
+  def name
+    base_name = 'shark'
+    base_name += '-open' if just_eat?
+    base_name
   end
-  attr_reader :window, :x, :y, :score
+
+
+  def ext
+    'png'
+  end
+
+  attr_reader :score
+
+  def chomp!
+    chomp.play
+  end
+
+  def chomp
+    @chomp ||= sample('chomp.wav')
+  end
 
   def setup
-    @x = @y = @vel_x = @vel_y = @angle = 0.0
+    super
     @score = 0
-    @direction = :r
-
-    @splash = Gosu::Sample.new(window, 'water.wav')
-    @chomp = Gosu::Sample.new(window, 'chomp.wav')
+    @splash = sample('water.wav')
+    @chomp = sample('chomp.wav')
   end
 
   def eats_fish(fishes)
@@ -113,43 +129,8 @@ class Shark
     end
   end
 
-  def chomp!
-    @chomp.play
-  end
-
   def splashing?
     @played and (Time.now.to_f - @played.to_f) < 1.0
-  end
-
-  def image= file
-    @image = self.class.image file, @window
-  end
-
-  def self.image file, window
-    @images ||= Hash.new
-    @images[file] ||= Gosu::Image.new(window, file, false)
-  end
-
-  def warp(x, y)
-    @x, @y = x, y
-  end
-
-  def move
-    @x += @vel_x
-    @y += @vel_y
-    @x %= Width
-    @y %= Height
-    decelerate
-  end
-
-  def decelerate
-    @vel_x *= 0.95
-    @vel_y *= 0.95
-  end
-
-  def draw
-    update_image
-    @image.draw_rot(@x, @y, 1, @angle)
   end
 
   def go_left
@@ -160,26 +141,6 @@ class Shark
   def go_right
     splash!
     @vel_x = 10
-  end
-
-  def update_image
-    path = name
-    path << '-open' if just_eat?
-    path << "-#{right? ? :r : :l}"
-    path << ".#{ext}"
-    self.image = path
-  end
-
-  def name
-    'shark'
-  end
-
-  def ext
-    'png'
-  end
-
-  def right?
-    @vel_x > 0
   end
 
   def go_up
@@ -194,7 +155,7 @@ class Shark
 end
 
 
-class Fish < Shark
+class LittleFish < Fish
   def setup
     super
     @vel_x = 5 * (rand - 0.5)
